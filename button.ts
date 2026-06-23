@@ -49,6 +49,12 @@ namespace ui {
         borderColor?: number
 
         /**
+         * Border width in pixels for rectangle and rounded-rectangle frames,
+         * drawn inward from the edge. Omitted values render a one-pixel border.
+         */
+        borderThickness?: number
+
+        /**
          * Shadow color used for one-pixel rounded shadow frames.
          */
         shadowColor?: number
@@ -115,6 +121,44 @@ namespace ui {
         copyButtonStyle(result, style3)
         copyButtonStyle(result, style4)
         return result
+    }
+
+    /**
+     * Preferred width in pixels for a control's content rendered as a button,
+     * including horizontal padding. Lets containers size controls to their
+     * content when no explicit size is given.
+     */
+    export function preferredControlWidth(
+        content: UiControlContent,
+        style?: UiButtonStyle,
+    ): number {
+        const font = (style && style.font) || BUTTON_DEFAULT_FONT
+        const text = content.text || ""
+        const textWidth = text.length ? font.charWidth * text.length : 0
+        const bitmapWidth = content.bitmap ? content.bitmap.width : 0
+        const gap = textWidth && bitmapWidth ? BUTTON_CONTENT_GAP : 0
+        return Math.max(
+            BUTTON_CONTROL_MIN_WIDTH,
+            bitmapWidth + gap + textWidth + BUTTON_CONTROL_HORIZONTAL_PADDING,
+        )
+    }
+
+    /**
+     * Preferred height in pixels for a control's content rendered as a button,
+     * including vertical padding.
+     */
+    export function preferredControlHeight(
+        content: UiControlContent,
+        style?: UiButtonStyle,
+    ): number {
+        const font = (style && style.font) || BUTTON_DEFAULT_FONT
+        const text = content.text || ""
+        const textHeight = text.length ? font.charHeight : 0
+        const bitmapHeight = content.bitmap ? content.bitmap.height : 0
+        return Math.max(
+            BUTTON_CONTROL_MIN_HEIGHT,
+            Math.max(textHeight, bitmapHeight) + BUTTON_CONTROL_VERTICAL_PADDING,
+        )
     }
 
     /**
@@ -199,10 +243,20 @@ namespace ui {
                 )
             } else if (frame == "roundedRect") {
                 surface.drawRoundedRect(rect, style.borderColor, background)
+                const extra = (style.borderThickness || 1) - 1
+                for (let i = 1; i <= extra; i++) {
+                    this.scratch_.copyFrom(rect).inflate(-i)
+                    surface.drawRoundedRect(this.scratch_, style.borderColor)
+                }
             } else {
                 if (background !== undefined) surface.fillRect(rect, background)
                 if (frame == "rect" && style.borderColor !== undefined) {
-                    surface.drawRect(rect, style.borderColor)
+                    const thickness = style.borderThickness || 1
+                    this.scratch_.copyFrom(rect)
+                    for (let i = 0; i < thickness; i++) {
+                        surface.drawRect(this.scratch_, style.borderColor)
+                        this.scratch_.inflate(-1)
+                    }
                 }
             }
             const contentRect = this.scratch_
@@ -728,36 +782,16 @@ namespace ui {
         }
 
         private preferredWidth(): number {
-            const style =
-                this.control_.style || UiButtonStyles.LightShadowedWhite
-            const font = style.font || BUTTON_DEFAULT_FONT
-            const text = this.control_.text || ""
-            const textWidth = text.length ? font.charWidth * text.length : 0
-            const bitmapWidth = this.control_.bitmap
-                ? this.control_.bitmap.width
-                : 0
-            const gap = textWidth && bitmapWidth ? BUTTON_CONTENT_GAP : 0
-            return Math.max(
-                BUTTON_CONTROL_MIN_WIDTH,
-                bitmapWidth +
-                    gap +
-                    textWidth +
-                    BUTTON_CONTROL_HORIZONTAL_PADDING,
+            return preferredControlWidth(
+                this.control_,
+                this.control_.style || UiButtonStyles.LightShadowedWhite,
             )
         }
 
         private preferredHeight(): number {
-            const style =
-                this.control_.style || UiButtonStyles.LightShadowedWhite
-            const font = style.font || BUTTON_DEFAULT_FONT
-            const textHeight = this.control_.text ? font.charHeight : 0
-            const bitmapHeight = this.control_.bitmap
-                ? this.control_.bitmap.height
-                : 0
-            return Math.max(
-                BUTTON_CONTROL_MIN_HEIGHT,
-                Math.max(textHeight, bitmapHeight) +
-                    BUTTON_CONTROL_VERTICAL_PADDING,
+            return preferredControlHeight(
+                this.control_,
+                this.control_.style || UiButtonStyles.LightShadowedWhite,
             )
         }
     }
@@ -853,6 +887,8 @@ namespace ui {
         if (source.frame !== undefined) target.frame = source.frame
         if (source.borderColor !== undefined)
             target.borderColor = source.borderColor
+        if (source.borderThickness !== undefined)
+            target.borderThickness = source.borderThickness
         if (source.shadowColor !== undefined)
             target.shadowColor = source.shadowColor
         if (source.font !== undefined) target.font = source.font
