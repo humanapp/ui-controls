@@ -7,6 +7,7 @@
         "label.ts",
         "control.ts",
         "row.ts",
+        "stack.ts",
         "grid.ts",
         "modal-style.ts",
         "modal-grid.ts",
