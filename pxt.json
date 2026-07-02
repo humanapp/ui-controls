@@ -31,7 +31,7 @@
         "radio": "*",
         "microphone": "*",
         "display-shield": "github:microbit-apps/display-shield#v1.1.4",
-        "ui-core": "github:humanapp/ui-core#v0.0.4"
+        "ui-core": "github:microbit-apps/ui-core#v0.0.4"
     },
     "testDependencies": {}
 }
